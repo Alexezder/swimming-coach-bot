@@ -1,14 +1,14 @@
 import os
+import asyncio
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
-# ==================== НАСТРОЙКИ ====================
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
 if not TOKEN:
-    raise ValueError("❌ BOT_TOKEN не найден! Создай файл .env")
+    raise ValueError("❌ BOT_TOKEN не найден!")
 
 # ==================== КЛАВИАТУРЫ ====================
 
@@ -44,10 +44,7 @@ def get_back_button():
 # ==================== ОБРАБОТЧИКИ ====================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = (
-        "👋 Привет! Я бот-помощник тренера по плаванию.\n\n"
-        "Выбери нужный раздел ниже 👇"
-    )
+    text = "👋 Привет! Выбери нужный раздел ниже 👇"
     await update.message.reply_text(text, reply_markup=get_main_menu())
 
 
@@ -58,66 +55,45 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "back_to_main":
         await query.edit_message_text("Выбери нужный раздел 👇", reply_markup=get_main_menu())
-
     elif data == "about_me":
-        text = "👤 <b>Обо мне и подходе</b>\n\n[Здесь текст про тренера]"
-        await query.edit_message_text(text, reply_markup=get_back_button(), parse_mode="HTML")
-
+        await query.edit_message_text("👤 Здесь текст про тебя", reply_markup=get_back_button(), parse_mode="HTML")
     elif data == "services":
-        text = "🏊 <b>Услуги и цены</b>\n\n[Здесь цены]"
-        await query.edit_message_text(text, reply_markup=get_back_button(), parse_mode="HTML")
-
+        await query.edit_message_text("🏊 Здесь услуги и цены", reply_markup=get_back_button(), parse_mode="HTML")
     elif data == "location":
-        text = "📍 <b>Где занимаемся</b>\n\n[Адрес бассейна]"
-        await query.edit_message_text(text, reply_markup=get_back_button(), parse_mode="HTML")
-
+        await query.edit_message_text("📍 Здесь адрес бассейна", reply_markup=get_back_button(), parse_mode="HTML")
     elif data == "faq_menu":
         await query.edit_message_text("❓ Выбери вопрос:", reply_markup=get_faq_menu())
-
     elif data == "booking":
-        text = "📅 Напиши мне в личные сообщения для записи на пробное занятие."
-        await query.edit_message_text(text, reply_markup=get_back_button(), parse_mode="HTML")
-
+        await query.edit_message_text("📅 Напиши мне для записи на пробное", reply_markup=get_back_button(), parse_mode="HTML")
     elif data == "contacts":
-        text = "📞 Telegram: @твой_ник\nТелефон: +7 (XXX) XXX-XX-XX"
-        await query.edit_message_text(text, reply_markup=get_back_button(), parse_mode="HTML")
-
-    # FAQ
+        await query.edit_message_text("📞 Контакты здесь", reply_markup=get_back_button(), parse_mode="HTML")
     elif data == "faq_age":
-        await query.edit_message_text("👶 Я беру детей с 4 лет.", reply_markup=get_faq_menu(), parse_mode="HTML")
+        await query.edit_message_text("👶 С 4 лет", reply_markup=get_faq_menu(), parse_mode="HTML")
     elif data == "faq_trial":
-        await query.edit_message_text("🎁 Пробное занятие стоит [ЦЕНА] ₽.", reply_markup=get_faq_menu(), parse_mode="HTML")
+        await query.edit_message_text("🎁 Пробное стоит [ЦЕНА]", reply_markup=get_faq_menu(), parse_mode="HTML")
     elif data == "faq_what_to_bring":
-        await query.edit_message_text("🩱 Купальник, шапочка, очки, полотенце.", reply_markup=get_faq_menu(), parse_mode="HTML")
+        await query.edit_message_text("🩱 Купальник, шапочка, очки", reply_markup=get_faq_menu(), parse_mode="HTML")
     elif data == "faq_price":
-        await query.edit_message_text("💰 Цены смотри в разделе «Услуги и цены».", reply_markup=get_faq_menu(), parse_mode="HTML")
+        await query.edit_message_text("💰 Смотри в разделе Услуги", reply_markup=get_faq_menu(), parse_mode="HTML")
     elif data == "faq_format":
-        await query.edit_message_text("👥 Можно индивидуально и в мини-группе.", reply_markup=get_faq_menu(), parse_mode="HTML")
+        await query.edit_message_text("👥 Индивидуально и в группе", reply_markup=get_faq_menu(), parse_mode="HTML")
     elif data == "faq_fear":
-        await query.edit_message_text("😰 Да, я работаю со страхом воды.", reply_markup=get_faq_menu(), parse_mode="HTML")
+        await query.edit_message_text("😰 Работаю со страхом воды", reply_markup=get_faq_menu(), parse_mode="HTML")
 
 
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
+async def main():
+    application = ApplicationBuilder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(button_handler))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(button_handler))
 
     print("🤖 Бот успешно запущен!")
 
-    # Исправление для Render / Python 3.12+
-    import asyncio
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        # Если event loop уже запущен (редко)
-        app.run_polling()
-    else:
-        app.run_polling()
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+    await asyncio.Event().wait()   # Держим бота запущенным
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
