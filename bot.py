@@ -56,7 +56,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "back_to_main":
         await query.edit_message_text("Выбери нужный раздел 👇", reply_markup=get_main_menu())
     elif data == "about_me":
-        await query.edit_message_text("👤 Здесь текст про тебя", reply_markup=get_back_button(), parse_mode="HTML")
+        await query.edit_message_text("👤 Здесь текст про тренера", reply_markup=get_back_button(), parse_mode="HTML")
     elif data == "services":
         await query.edit_message_text("🏊 Здесь услуги и цены", reply_markup=get_back_button(), parse_mode="HTML")
     elif data == "location":
@@ -74,7 +74,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "faq_what_to_bring":
         await query.edit_message_text("🩱 Купальник, шапочка, очки", reply_markup=get_faq_menu(), parse_mode="HTML")
     elif data == "faq_price":
-        await query.edit_message_text("💰 Смотри в разделе Услуги", reply_markup=get_faq_menu(), parse_mode="HTML")
+        await query.edit_message_text("💰 Смотри раздел Услуги", reply_markup=get_faq_menu(), parse_mode="HTML")
     elif data == "faq_format":
         await query.edit_message_text("👥 Индивидуально и в группе", reply_markup=get_faq_menu(), parse_mode="HTML")
     elif data == "faq_fear":
@@ -87,12 +87,31 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button_handler))
 
-    print("🤖 Бот успешно запущен!")
+    print("🤖 Бот запущен на Webhooks!")
 
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()
-    await asyncio.Event().wait()   # Держим бота запущенным
+    # === Webhook настройки для Render ===
+    PORT = int(os.environ.get("PORT", 8443))
+    RENDER_HOST = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+
+    if RENDER_HOST:
+        webhook_url = f"https://{RENDER_HOST}/webhook"
+        print(f"Webhook URL: {webhook_url}")
+
+        await application.initialize()
+        await application.start()
+        await application.updater.start_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path="webhook",
+            webhook_url=webhook_url,
+        )
+        await asyncio.Event().wait()
+    else:
+        # Локальный запуск (для теста)
+        await application.initialize()
+        await application.start()
+        await application.updater.start_polling()
+        await asyncio.Event().wait()
 
 
 if __name__ == "__main__":
