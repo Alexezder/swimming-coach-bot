@@ -104,7 +104,19 @@ def main():
     app.add_handler(CallbackQueryHandler(button_handler))
 
     print("🤖 Бот успешно запущен!")
-    app.run_polling()
+
+    # Исправление для Render / Python 3.12+
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        # Если event loop уже запущен (редко)
+        app.run_polling()
+    else:
+        app.run_polling()
 
 
 if __name__ == "__main__":
